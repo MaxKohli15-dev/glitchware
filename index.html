@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLITCHWARE</title>
+<link rel="icon" href="glitchware-256.png">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --c:#00f0ff; --p:#ff1aa6; --bg:#030008; }
+  * { box-sizing:border-box; margin:0; }
+  html,body { background:var(--bg); color:#fff; font-family:'JetBrains Mono',monospace; overflow-x:hidden; }
+  canvas#rain { position:fixed; inset:0; z-index:0; opacity:.35; }
+  .scan { position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 2px,transparent 2px 4px); }
+  .vig { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 40%,#000 100%); }
+  main { position:relative; z-index:2; }
+
+  /* HERO */
+  .hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px 16px; }
+  .icon { width:min(220px,50vw); border-radius:22%; animation:float 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate; }
+  h1 { font-family:Orbitron,sans-serif; font-weight:900; font-size:clamp(36px,10vw,140px); letter-spacing:.05em; margin-top:24px; position:relative; line-height:1; }
+  h1::before, h1::after { content:attr(data-t); position:absolute; inset:0; }
+  h1::before { color:var(--c); animation:g1 2.5s infinite steps(1); }
+  h1::after  { color:var(--p); animation:g2 2.5s infinite steps(1); }
+  .tag { margin-top:14px; font-size:clamp(14px,2.4vw,20px); color:#ccc; min-height:1.4em; }
+  .tag .cur { animation:blink .8s steps(2) infinite; color:var(--c); }
+
+  .dl { margin-top:40px; position:relative; display:inline-block; text-decoration:none; color:#000;
+    font-family:Orbitron,sans-serif; font-weight:900; font-size:clamp(18px,3vw,26px); letter-spacing:.1em;
+    padding:22px 56px; background:linear-gradient(90deg,var(--c),var(--p),var(--c)); background-size:200%;
+    clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+    animation:shift 3s linear infinite; transition:transform .15s; }
+  .dl:hover { transform:scale(1.07); }
+  .dl:active { transform:scale(.97); }
+  .badges { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:22px; }
+  .badge { border:1px solid rgba(255,255,255,.25); padding:6px 14px; font-size:12px; letter-spacing:.15em; backdrop-filter:blur(4px); }
+  .badge.ok { border-color:#1fd65f; color:#1fd65f; }
+  .down { position:absolute; bottom:24px; font-size:28px; color:var(--c); animation:float 1.6s ease-in-out infinite; text-decoration:none; }
+
+  /* STAGES */
+  .stages { max-width:1200px; margin:0 auto; padding:80px 16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; }
+  .st { aspect-ratio:16/10; border:1px solid rgba(255,255,255,.12); position:relative; overflow:hidden; cursor:default;
+    transition:transform .3s, box-shadow .3s; opacity:0; transform:translateY(40px); }
+  .st.in { opacity:1; transform:none; }
+  .st:hover { transform:scale(1.04) rotate(-.5deg); box-shadow:0 0 40px var(--p); z-index:2; }
+  .st .n { position:absolute; top:10px; left:12px; font-family:Orbitron; font-size:42px; font-weight:900; opacity:.25; }
+  .cmd { background:#0c0c0c; color:#c0c0c0; font-size:11px; padding:30px 12px 12px; white-space:pre; line-height:1.5; }
+  .cmd .bar { position:absolute; top:0; left:0; right:0; height:22px; background:#1f1f1f; font-size:10px; padding:4px 8px; color:#aaa; }
+  .enc { background:#000; color:#ff3b3b; display:flex; align-items:center; justify-content:center; flex-direction:column; font-size:13px; }
+  .enc .pb { width:70%; height:10px; border:1px solid #ff3b3b; margin-top:10px; }
+  .enc .pb i { display:block; height:100%; background:#ff3b3b; width:0; animation:fill 3s linear infinite; }
+  .ran { background:#7a0000; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; }
+  .ran .lock { font-size:48px; }
+  .ran .t { font-family:Orbitron; font-size:28px; color:#ffde3d; }
+  .bsod { background:#0063b1; display:flex; flex-direction:column; justify-content:center; padding:0 28px; font-family:Segoe UI,sans-serif; }
+  .bsod b { font-size:64px; font-weight:300; }
+  .bsod span { font-size:13px; opacity:.9; }
+
+  footer { text-align:center; padding:40px 16px 60px; font-size:12px; color:#777; letter-spacing:.1em; }
+  footer b { color:#1fd65f; }
+
+  @keyframes float { 50% { transform:translateY(-12px); } }
+  @keyframes glow { from { box-shadow:0 0 30px rgba(0,240,255,.5); } to { box-shadow:0 0 70px rgba(255,26,166,.8); } }
+  @keyframes shift { to { background-position:200%; } }
+  @keyframes blink { 50% { opacity:0; } }
+  @keyframes fill { to { width:100%; } }
+  @keyframes g1 { 0%,86%,100% { transform:none; clip-path:inset(0 0 100% 0); }
+    88% { transform:translate(-6px,2px); clip-path:inset(10% 0 55% 0); } 92% { transform:translate(5px,-2px); clip-path:inset(60% 0 8% 0); } }
+  @keyframes g2 { 0%,86%,100% { transform:none; clip-path:inset(0 0 100% 0); }
+    89% { transform:translate(6px,-1px); clip-path:inset(45% 0 30% 0); } 94% { transform:translate(-4px,2px); clip-path:inset(5% 0 75% 0); } }
+  body.shake main { animation:sh .08s 6; }
+  @keyframes sh { 50% { transform:translate(4px,-3px); } }
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas><div class="scan"></div><div class="vig"></div>
+<main>
+  <section class="hero">
+    <img class="icon" src="glitchware-256.png" alt="Glitchware">
+    <h1 data-t="GLITCHWARE">GLITCHWARE</h1>
+    <div class="tag"><span id="typed"></span><span class="cur">█</span></div>
+    <a class="dl" id="dl" href="Glitchware.exe" download>▶ FREE DOWNLOAD</a>
+    <div class="badges">
+      <span class="badge ok">✔ 100% HARMLOS</span>
+      <span class="badge">WINDOWS</span>
+      <span class="badge">FREE TO PLAY</span>
+      <span class="badge">ESC = EXIT</span>
+    </div>
+    <a class="down" href="#s">▼</a>
+  </section>
+
+  <section class="stages" id="s">
+    <div class="st cmd"><div class="bar">Administrator: C:\Windows\System32\cmd.exe</div><span class="n">01</span><span id="cmdtxt"></span></div>
+    <div class="st enc"><span class="n">02</span>ENCRYPTING FILES...<div class="pb"><i></i></div></div>
+    <div class="st ran"><span class="n">03</span><div class="lock">🔒</div><div class="t" id="cd">71:59:59</div></div>
+    <div class="st bsod"><span class="n">04</span><b>:(</b><span>CRITICAL_PROCESS_DIED</span></div>
+  </section>
+
+  <footer>© 2026 GLITCHWARE STUDIOS · <b>PRANK GAME – MACHT NICHTS KAPUTT</b> · NICHT VERBUNDEN MIT MICROSOFT</footer>
+</main>
+
+<script>
+// Matrix-Regen
+const cv=document.getElementById('rain'),cx=cv.getContext('2d');let dr=[];
+function rs(){cv.width=innerWidth;cv.height=innerHeight;dr=Array(Math.ceil(cv.width/16)).fill(0).map(()=>Math.random()*-50);}
+rs();addEventListener('resize',rs);
+setInterval(()=>{cx.fillStyle='rgba(3,0,8,.12)';cx.fillRect(0,0,cv.width,cv.height);cx.font='15px monospace';
+ dr.forEach((y,i)=>{cx.fillStyle=Math.random()<.5?'#00f0ff':'#ff1aa6';
+ cx.fillText(String.fromCharCode(0x30A0+Math.random()*96),i*16,y*16);dr[i]=y*16>cv.height&&Math.random()>.97?0:y+1;});},50);
+
+// Tipp-Text
+const tags=['> dein PC gehört jetzt uns...','> just kidding.','> der realistischste fake-virus ever.','> erschreck deine freunde.'];
+let ti=0,ci=0,del=false;const el=document.getElementById('typed');
+(function type(){const s=tags[ti];el.textContent=s.slice(0,ci);
+ if(!del&&ci<s.length)ci++;else if(!del){del=true;return setTimeout(type,1500);}
+ else if(ci>0)ci--;else{del=false;ti=(ti+1)%tags.length;}
+ setTimeout(type,del?25:60);})();
+
+// Mini-cmd in Karte 1
+const lines=['C:\\Windows\\system32>whoami','desktop\\you','','C:\\Windows\\system32>sc stop WinDefend','STATUS : STOP_PENDING','','C:\\Windows\\system32>vssadmin delete shadows /all','Erfolgreich geloescht.','','C:\\Windows\\system32>svch0st.exe --encrypt'];
+let li=0;const ct=document.getElementById('cmdtxt');
+setInterval(()=>{li=(li+1)%(lines.length+6);ct.textContent=lines.slice(0,Math.min(li,lines.length)).join('\n');},400);
+
+// Countdown
+let sec=72*3600-1;setInterval(()=>{sec--;const h=sec/3600|0,m=(sec%3600)/60|0,s=sec%60;
+ document.getElementById('cd').textContent=[h,m,s].map(v=>String(v).padStart(2,'0')).join(':');},1000);
+
+// Karten einblenden
+const io=new IntersectionObserver(es=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('in'),i*120);io.unobserve(e.target);}}),{threshold:.2});
+document.querySelectorAll('.st').forEach(s=>{s.style.transition='opacity .6s, transform .6s';io.observe(s);});
+
+// Shake beim Download-Klick
+document.getElementById('dl').addEventListener('click',()=>{document.body.classList.add('shake');setTimeout(()=>document.body.classList.remove('shake'),600);});
+</script>
+</body>
+</html>
