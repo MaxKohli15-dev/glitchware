@@ -3,135 +3,354 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GLITCHWARE</title>
+<title>PixelArcade – Kostenlose Online-Spiele</title>
 <link rel="icon" href="glitchware-256.png">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-  :root { --c:#00f0ff; --p:#ff1aa6; --bg:#030008; }
+  :root { --c:#00f0ff; --p:#ff1aa6; --bg:#0b0714; --card:#151022; --line:#2a2140; --mut:#9a90b0; }
   * { box-sizing:border-box; margin:0; }
-  html,body { background:var(--bg); color:#fff; font-family:'JetBrains Mono',monospace; overflow-x:hidden; }
-  canvas#rain { position:fixed; inset:0; z-index:0; opacity:.35; }
-  .scan { position:fixed; inset:0; z-index:1; pointer-events:none;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,.25) 0 2px,transparent 2px 4px); }
-  .vig { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center,transparent 40%,#000 100%); }
-  main { position:relative; z-index:2; }
+  body { background:var(--bg); color:#fff; font-family:Inter,system-ui,sans-serif; }
+  a { color:inherit; text-decoration:none; }
 
-  /* HERO */
-  .hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px 16px; }
-  .icon { width:min(220px,50vw); border-radius:22%; animation:float 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate; }
-  h1 { font-family:Orbitron,sans-serif; font-weight:900; font-size:clamp(36px,10vw,140px); letter-spacing:.05em; margin-top:24px; position:relative; line-height:1; }
-  h1::before, h1::after { content:attr(data-t); position:absolute; inset:0; }
-  h1::before { color:var(--c); animation:g1 2.5s infinite steps(1); }
-  h1::after  { color:var(--p); animation:g2 2.5s infinite steps(1); }
-  .tag { margin-top:14px; font-size:clamp(14px,2.4vw,20px); color:#ccc; min-height:1.4em; }
-  .tag .cur { animation:blink .8s steps(2) infinite; color:var(--c); }
+  header { display:flex; align-items:center; gap:18px; padding:12px 20px; background:#0f0a1c; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
+  .logo { font-family:Orbitron; font-weight:900; font-size:20px; letter-spacing:.06em; cursor:pointer; }
+  .logo span { color:var(--p); }
+  nav.top { display:flex; gap:16px; font-size:14px; color:var(--mut); }
+  nav.top a:hover { color:#fff; }
+  .search { flex:1; max-width:320px; margin-left:auto; background:#1b1430; border:1px solid var(--line); border-radius:20px; padding:8px 14px; color:var(--mut); font-size:13px; }
+  .login { background:var(--p); padding:8px 16px; border-radius:20px; font-weight:700; font-size:13px; }
 
-  .dl { margin-top:40px; position:relative; display:inline-block; text-decoration:none; color:#000;
-    font-family:Orbitron,sans-serif; font-weight:900; font-size:clamp(18px,3vw,26px); letter-spacing:.1em;
-    padding:22px 56px; background:linear-gradient(90deg,var(--c),var(--p),var(--c)); background-size:200%;
-    clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
-    animation:shift 3s linear infinite; transition:transform .15s; }
-  .dl:hover { transform:scale(1.07); }
-  .dl:active { transform:scale(.97); }
-  .badges { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:22px; }
-  .badge { border:1px solid rgba(255,255,255,.25); padding:6px 14px; font-size:12px; letter-spacing:.15em; backdrop-filter:blur(4px); }
-  .badge.ok { border-color:#1fd65f; color:#1fd65f; }
-  .down { position:absolute; bottom:24px; font-size:28px; color:var(--c); animation:float 1.6s ease-in-out infinite; text-decoration:none; }
+  .page { max-width:1240px; margin:0 auto; padding:20px; display:grid; grid-template-columns:1fr 300px; gap:20px; }
+  .crumb { font-size:13px; color:var(--mut); grid-column:1/-1; }
 
-  /* STAGES */
-  .stages { max-width:1200px; margin:0 auto; padding:80px 16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; }
-  .st { aspect-ratio:16/10; border:1px solid rgba(255,255,255,.12); position:relative; overflow:hidden; cursor:default;
-    transition:transform .3s, box-shadow .3s; opacity:0; transform:translateY(40px); }
-  .st.in { opacity:1; transform:none; }
-  .st:hover { transform:scale(1.04) rotate(-.5deg); box-shadow:0 0 40px var(--p); z-index:2; }
-  .st .n { position:absolute; top:10px; left:12px; font-family:Orbitron; font-size:42px; font-weight:900; opacity:.25; }
-  .cmd { background:#0c0c0c; color:#c0c0c0; font-size:11px; padding:30px 12px 12px; white-space:pre; line-height:1.5; }
-  .cmd .bar { position:absolute; top:0; left:0; right:0; height:22px; background:#1f1f1f; font-size:10px; padding:4px 8px; color:#aaa; }
-  .enc { background:#000; color:#ff3b3b; display:flex; align-items:center; justify-content:center; flex-direction:column; font-size:13px; }
-  .enc .pb { width:70%; height:10px; border:1px solid #ff3b3b; margin-top:10px; }
-  .enc .pb i { display:block; height:100%; background:#ff3b3b; width:0; animation:fill 3s linear infinite; }
-  .ran { background:#7a0000; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; }
-  .ran .lock { font-size:48px; }
-  .ran .t { font-family:Orbitron; font-size:28px; color:#ffde3d; }
-  .bsod { background:#0063b1; display:flex; flex-direction:column; justify-content:center; padding:0 28px; font-family:Segoe UI,sans-serif; }
-  .bsod b { font-size:64px; font-weight:300; }
-  .bsod span { font-size:13px; opacity:.9; }
+  /* Player */
+  .player { position:relative; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#000; border:1px solid var(--line); }
+  .layer { position:absolute; inset:0; }
+  .cover { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:7%; }
+  .cover .art { position:absolute; inset:0; }
+  .cover .art svg { width:100%; height:100%; display:block; filter:blur(0); }
+  .cover::after { content:""; position:absolute; inset:0; background:linear-gradient(transparent 50%,rgba(0,0,0,.6)); }
+  .play { position:relative; z-index:2; font-family:Orbitron; font-weight:900; font-size:clamp(18px,3vw,28px); letter-spacing:.12em; color:#000;
+    padding:16px 60px; border:0; cursor:pointer; border-radius:50px; background:linear-gradient(90deg,var(--c),var(--p),var(--c)); background-size:200%;
+    animation:shift 3s linear infinite, pulse 1.4s ease-in-out infinite; }
+  .play:hover { filter:brightness(1.2); }
 
-  footer { text-align:center; padding:40px 16px 60px; font-size:12px; color:#777; letter-spacing:.1em; }
+  /* Werbung */
+  .ad { display:none; overflow:hidden; }
+  .ad .label { position:absolute; top:10px; left:12px; background:#ffcc00; color:#000; font-size:11px; font-weight:800; padding:2px 8px; border-radius:3px; z-index:5; }
+  .ad .adinfo { position:absolute; top:8px; right:12px; color:#fff; font-size:16px; opacity:.8; z-index:5; }
+  .ad .skip { position:absolute; right:12px; bottom:14px; background:rgba(0,0,0,.75); border:1px solid #555; color:#fff; padding:10px 18px; font-size:14px; z-index:5; }
+  .ad .skip.ready { cursor:pointer; border-color:#fff; }
+  .ad .adtime { position:absolute; left:12px; bottom:14px; background:rgba(0,0,0,.6); color:#fff; font-size:12px; padding:4px 8px; border-radius:3px; z-index:5; }
+  .ad .bar { position:absolute; left:0; bottom:0; height:4px; background:#ffcc00; width:0; z-index:5; }
+  .creative { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:14px 12px 56px; text-align:center; }
+  .hook { font-weight:900; font-size:clamp(16px,3vw,30px); color:#fff; text-shadow:0 3px 0 #000,0 0 10px #000; animation:pulse .8s infinite; }
+  .scene { flex:1; width:100%; display:flex; align-items:center; justify-content:center; position:relative; }
+  .scene svg { height:100%; max-height:240px; }
+  .cta-row { display:flex; align-items:center; gap:10px; background:#fff; color:#000; border-radius:12px; padding:8px 10px; width:min(460px,92%); }
+  .appic { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; }
+  .appinfo { text-align:left; flex:1; } .appinfo b { display:block; font-size:14px; } .appinfo span { font-size:11px; color:#666; }
+  .install { background:#1a73e8; color:#fff; font-weight:800; font-size:13px; padding:9px 16px; border-radius:20px; animation:pulse 1s infinite; }
+  .tr { transition:transform .8s ease-in, opacity .5s; }
+  .big { font-size:clamp(50px,9vw,110px); line-height:1; }
+
+  /* Ladescreen / Download */
+  .gate { display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
+  .gate .bg { position:absolute; inset:0; opacity:.35; }
+  .gate .bg svg { width:100%; height:100%; }
+  .gate > *:not(.bg) { position:relative; }
+  .gate .gico { width:90px; height:90px; border-radius:20px; overflow:hidden; box-shadow:0 0 30px rgba(0,0,0,.8); margin-bottom:12px; }
+  .gate .gico svg { width:100%; height:100%; }
+  .gate .load { width:min(380px,80%); height:10px; background:rgba(0,0,0,.6); border-radius:10px; overflow:hidden; margin:16px 0 8px; }
+  .gate .load i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--c),var(--p)); transition:width .2s; }
+  .gate h2 { font-family:Orbitron; font-size:clamp(18px,3vw,28px); text-shadow:0 2px 8px #000; }
+  .gate p { color:#ddd; font-size:14px; text-shadow:0 1px 4px #000; max-width:520px; }
+  .tip { margin-top:10px; font-size:12px; color:#bbb; font-style:italic; }
+  .dl { margin-top:18px; display:inline-block; font-family:Orbitron; font-weight:900; color:#000; padding:14px 40px; border-radius:50px; background:linear-gradient(90deg,var(--c),var(--p)); animation:pulse 1.2s infinite; }
+  .safe { margin-top:12px; color:#1fd65f; font-size:12px; letter-spacing:.08em; text-shadow:0 1px 3px #000; }
+
+  .info { display:flex; align-items:center; gap:14px; margin-top:14px; }
+  .info .ico { width:56px; height:56px; border-radius:12px; overflow:hidden; flex:none; }
+  .info .ico svg { width:100%; height:100%; }
+  .info h1 { font-size:22px; }
+  .info .sub { font-size:13px; color:var(--mut); }
+  .info .acts { margin-left:auto; display:flex; gap:8px; }
+  .chip { background:var(--card); border:1px solid var(--line); padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; }
+  .tags { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .tags span { background:#1d1530; color:var(--mut); font-size:12px; padding:4px 10px; border-radius:12px; }
+  .desc { margin-top:12px; color:#cfc8dd; font-size:14px; line-height:1.55; }
+
+  aside { display:flex; flex-direction:column; gap:14px; }
+  .sidead { border-radius:12px; overflow:hidden; position:relative; min-height:250px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px; }
+  .sidead small { position:absolute; top:6px; right:8px; font-size:10px; opacity:.7; }
+  .sa1 { background:linear-gradient(160deg,#0f9b0f,#064d06); } .sa1 b { font-size:26px; } .sa1 .em { font-size:60px; }
+  .sa2 { background:linear-gradient(160deg,#2c3eff,#0a0f5c); min-height:200px; } .sa2 b { font-size:22px; } .sa2 .em { font-size:50px; animation:pulse 1.2s infinite; }
+  .sbtn { margin-top:10px; background:#fff; color:#000; font-weight:800; padding:8px 18px; border-radius:20px; font-size:13px; }
+  .more h4 { font-size:14px; margin-bottom:8px; color:var(--mut); }
+  .g { display:flex; gap:10px; align-items:center; padding:8px; border-radius:10px; background:var(--card); margin-bottom:8px; cursor:pointer; }
+  .g:hover { background:#1f1733; }
+  .g .th { width:64px; height:48px; border-radius:8px; overflow:hidden; flex:none; }
+  .g .th svg { width:100%; height:100%; }
+  .g b { font-size:13px; display:block; } .g span { font-size:11px; color:var(--mut); }
+
+  .banner { grid-column:1/-1; height:90px; border-radius:10px; background:linear-gradient(90deg,#ffe100,#ff9500); color:#000; display:flex; align-items:center; justify-content:center; gap:20px; font-weight:800; font-size:clamp(14px,2.4vw,24px); position:relative; }
+  .banner small { position:absolute; top:4px; right:8px; font-size:10px; font-weight:400; }
+
+  .sec { grid-column:1/-1; margin-top:10px; }
+  .sech { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .sech h3 { font-size:20px; } .sech a { color:var(--c); font-size:13px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px; }
+  .tile { position:relative; aspect-ratio:4/3; border-radius:14px; overflow:hidden; cursor:pointer; transition:transform .2s, box-shadow .2s; }
+  .tile svg { width:100%; height:100%; display:block; }
+  .tile:hover { transform:translateY(-4px) scale(1.04); box-shadow:0 10px 30px rgba(0,0,0,.6),0 0 0 3px #fff; z-index:2; }
+  .tile .nm { position:absolute; left:0; right:0; bottom:0; padding:18px 8px 6px; font-size:12px; font-weight:800; background:linear-gradient(transparent,rgba(0,0,0,.85)); opacity:0; transition:opacity .2s; }
+  .tile:hover .nm { opacity:1; }
+  .tile .bd { position:absolute; top:6px; left:6px; font-size:10px; font-weight:800; padding:2px 7px; border-radius:8px; }
+  .bd.new { background:#1fd65f; color:#000; } .bd.hot { background:#ff3b3b; }
+  .tile .pl { position:absolute; top:6px; right:6px; font-size:10px; background:rgba(0,0,0,.55); padding:2px 6px; border-radius:8px; }
+  .cats { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .cats a { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--a); padding:14px; border-radius:10px; font-weight:700; cursor:pointer; }
+  .cats a:hover { background:#1f1733; }
+
+  footer { text-align:center; color:var(--mut); font-size:12px; padding:30px 16px 40px; }
   footer b { color:#1fd65f; }
 
-  @keyframes float { 50% { transform:translateY(-12px); } }
-  @keyframes glow { from { box-shadow:0 0 30px rgba(0,240,255,.5); } to { box-shadow:0 0 70px rgba(255,26,166,.8); } }
   @keyframes shift { to { background-position:200%; } }
-  @keyframes blink { 50% { opacity:0; } }
-  @keyframes fill { to { width:100%; } }
-  @keyframes g1 { 0%,86%,100% { transform:none; clip-path:inset(0 0 100% 0); }
-    88% { transform:translate(-6px,2px); clip-path:inset(10% 0 55% 0); } 92% { transform:translate(5px,-2px); clip-path:inset(60% 0 8% 0); } }
-  @keyframes g2 { 0%,86%,100% { transform:none; clip-path:inset(0 0 100% 0); }
-    89% { transform:translate(6px,-1px); clip-path:inset(45% 0 30% 0); } 94% { transform:translate(-4px,2px); clip-path:inset(5% 0 75% 0); } }
-  body.shake main { animation:sh .08s 6; }
-  @keyframes sh { 50% { transform:translate(4px,-3px); } }
+  @keyframes pulse { 50% { transform:scale(1.06); } }
+  @keyframes bob { 50% { transform:translateY(-10px); } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (max-width:900px) { .page { grid-template-columns:1fr; } nav.top, .search { display:none; } .info .acts { display:none; } }
 </style>
 </head>
 <body>
-<canvas id="rain"></canvas><div class="scan"></div><div class="vig"></div>
-<main>
-  <section class="hero">
-    <img class="icon" src="glitchware-256.png" alt="Glitchware">
-    <h1 data-t="GLITCHWARE">GLITCHWARE</h1>
-    <div class="tag"><span id="typed"></span><span class="cur">█</span></div>
-    <a class="dl" id="dl" href="Glitchware.exe" download>▶ FREE DOWNLOAD</a>
-    <div class="badges">
-      <span class="badge ok">✔ 100% HARMLOS</span>
-      <span class="badge">WINDOWS</span>
-      <span class="badge">FREE TO PLAY</span>
-      <span class="badge">ESC = EXIT</span>
+<header>
+  <div class="logo" onclick="openGame(0)">PIXEL<span>ARCADE</span></div>
+  <nav class="top"><a href="#neu">Neu</a><a href="#hot">Beliebt</a><a href="#kat">Action</a><a href="#kat">Horror</a><a href="#kat">Multiplayer</a></nav>
+  <div class="search">🔍 Spiele suchen...</div>
+  <a class="login" href="#">Anmelden</a>
+</header>
+
+<div class="page">
+  <div class="crumb" id="crumb"></div>
+
+  <section>
+    <div class="player">
+      <div class="layer cover" id="cover"><div class="art" id="coverArt"></div><button class="play" id="playBtn">▶ PLAY</button></div>
+      <div class="layer ad" id="ad">
+        <span class="label">Anzeige</span><span class="adinfo">ⓘ</span>
+        <div class="creative" id="creative"></div>
+        <div class="adtime" id="adtime">Anzeige · 0:10</div>
+        <div class="skip" id="skip">Überspringen in 5</div>
+        <div class="bar" id="adbar"></div>
+      </div>
+      <div class="layer gate" id="gate">
+        <div class="bg" id="gateBg"></div>
+        <div class="gico" id="gateIco"></div>
+        <h2 id="gateTitle"></h2>
+        <div class="load"><i id="load"></i></div>
+        <p id="gateTxt"></p>
+        <div class="tip" id="gateTip"></div>
+        <div id="dlBox" style="display:none">
+          <a class="dl" href="Glitchware.exe" download>⬇ JETZT HERUNTERLADEN</a>
+          <div class="safe">✔ 100 % HARMLOSER PRANK · KEINE INSTALLATION · ESC = BEENDEN</div>
+        </div>
+      </div>
     </div>
-    <a class="down" href="#s">▼</a>
+
+    <div class="info">
+      <div class="ico" id="infoIco"></div>
+      <div><h1 id="title"></h1><div class="sub" id="sub"></div></div>
+      <div class="acts"><span class="chip" id="likes"></span><span class="chip">❤ Favorit</span><span class="chip">⛶ Vollbild</span></div>
+    </div>
+    <div class="tags" id="tags"></div>
+    <p class="desc" id="desc"></p>
   </section>
 
-  <section class="stages" id="s">
-    <div class="st cmd"><div class="bar">Administrator: C:\Windows\System32\cmd.exe</div><span class="n">01</span><span id="cmdtxt"></span></div>
-    <div class="st enc"><span class="n">02</span>ENCRYPTING FILES...<div class="pb"><i></i></div></div>
-    <div class="st ran"><span class="n">03</span><div class="lock">🔒</div><div class="t" id="cd">71:59:59</div></div>
-    <div class="st bsod"><span class="n">04</span><b>:(</b><span>CRITICAL_PROCESS_DIED</span></div>
-  </section>
+  <aside>
+    <div class="sidead sa1"><small>Anzeige</small><div class="em">🥤</div><b>ZAP ENERGY</b><div>Volle Power fürs Gaming</div><div class="sbtn">Mehr erfahren</div></div>
+    <div class="more"><h4>Ähnliche Spiele</h4><div id="similar"></div></div>
+    <div class="sidead sa2"><small>Anzeige</small><div class="em">🎧</div><b>BASSBOOM X9</b><div>Headset −60 %</div><div class="sbtn">Zum Angebot</div></div>
+  </aside>
 
-  <footer>© 2026 GLITCHWARE STUDIOS · <b>PRANK GAME – MACHT NICHTS KAPUTT</b> · NICHT VERBUNDEN MIT MICROSOFT</footer>
-</main>
+  <div class="banner"><small>Anzeige</small>🏎️ TURBO RACERS – JETZT GRATIS SPIELEN 🏁</div>
+
+  <section class="sec" id="hot"><div class="sech"><h3>🔥 Beliebt gerade</h3><a href="#">Alle anzeigen ›</a></div><div class="grid" id="g1"></div></section>
+  <section class="sec" id="neu"><div class="sech"><h3>✨ Neue Spiele</h3><a href="#">Alle anzeigen ›</a></div><div class="grid" id="g2"></div></section>
+  <section class="sec" id="kat"><div class="sech"><h3>🏷️ Kategorien</h3></div>
+    <div class="cats">
+      <a style="--a:#ff4d4d">⚔️ Action</a><a style="--a:#a64dff">👻 Horror</a><a style="--a:#ff9f1a">🏎️ Rennen</a><a style="--a:#1ad1ff">🧩 Puzzle</a>
+      <a style="--a:#4dff88">⚽ Sport</a><a style="--a:#ff4dc4">🎯 Shooter</a><a style="--a:#ffd11a">🧠 Quiz</a><a style="--a:#4d79ff">👥 Multiplayer</a>
+    </div>
+  </section>
+</div>
+
+<footer>© 2026 PixelArcade · <b>Alle Spiele führen zu Glitchware – einem harmlosen Prank, der nichts auf deinem PC verändert.</b> · Alle Spiele und Anzeigen sind erfunden.</footer>
 
 <script>
-// Matrix-Regen
-const cv=document.getElementById('rain'),cx=cv.getContext('2d');let dr=[];
-function rs(){cv.width=innerWidth;cv.height=innerHeight;dr=Array(Math.ceil(cv.width/16)).fill(0).map(()=>Math.random()*-50);}
-rs();addEventListener('resize',rs);
-setInterval(()=>{cx.fillStyle='rgba(3,0,8,.12)';cx.fillRect(0,0,cv.width,cv.height);cx.font='15px monospace';
- dr.forEach((y,i)=>{cx.fillStyle=Math.random()<.5?'#00f0ff':'#ff1aa6';
- cx.fillText(String.fromCharCode(0x30A0+Math.random()*96),i*16,y*16);dr[i]=y*16>cv.height&&Math.random()>.97?0:y+1;});},50);
+const $ = id => document.getElementById(id);
 
-// Tipp-Text
-const tags=['> dein PC gehört jetzt uns...','> just kidding.','> der realistischste fake-virus ever.','> erschreck deine freunde.'];
-let ti=0,ci=0,del=false;const el=document.getElementById('typed');
-(function type(){const s=tags[ti];el.textContent=s.slice(0,ci);
- if(!del&&ci<s.length)ci++;else if(!del){del=true;return setTimeout(type,1500);}
- else if(ci>0)ci--;else{del=false;ti=(ti+1)%tags.length;}
- setTimeout(type,del?25:60);})();
+/* ===== Spiele: [Name, Emoji, Farbe1, Farbe2, Genre, Ladetexte[], Tipp, Beschreibung, Szene] ===== */
+const G = [
+ ['Glitchware','💀','#3a0b5e','#05000c','Horror',['Infiziere Spielwelt...','Lade Glitch-Engine...','Entschlüssele Level...'],'Tipp: Drücke ESC, wenn es zu gruselig wird.','Der realistischste Virus-Simulator. Erlebe, wie dein PC „gehackt“ wird – alles nur Show, nichts passiert wirklich.','glitch'],
+ ['Night Shift 404','👻','#4a0d0d','#150303','Horror',['Schalte Lichter aus...','Lade Überwachungskameras...','Etwas bewegt sich...'],'Tipp: Schau nie zu lange auf Kamera 4.','Überlebe fünf Nächte als Nachtwächter in einem verlassenen Serverraum.','night'],
+ ['Orbit Dash','🚀','#0d3a5c','#020c1a','Action',['Zünde Triebwerke...','Berechne Umlaufbahn...','Lade Asteroidenfeld...'],'Tipp: Halte Abstand zu roten Asteroiden.','Fliege durch Asteroidenfelder und sammle Sternenstaub.','space'],
+ ['Zombie Mall','🧟','#2f4a0d','#0b1503','Survival',['Verbarrikadiere Türen...','Lade Horde...','Suche Vorräte...'],'Tipp: Der Food-Court ist nie sicher.','Überlebe die Zombie-Apokalypse in einem Einkaufszentrum.','city'],
+ ['Drift King X','🏎️','#ff7a00','#6b1d00','Rennen',['Wärme Reifen auf...','Lade Strecke...','Tune Motor...'],'Tipp: Bremse vor der Kurve, nicht drin.','Drifte durch neonbeleuchtete Straßen und werde zum König der Nacht.','road'],
+ ['Slime Smash','🟢','#19c37d','#063b26','Arcade',['Mische Schleim...','Lade Glibber-Physik...','Fülle Becher...'],'Tipp: Kombos geben doppelte Punkte.','Zerquetsche bunte Schleimbälle in diesem süchtig machenden Arcade-Spiel.','blobs'],
+ ['Tower Panic','🏰','#7a4dff','#1e0b5c','Strategie',['Baue Mauern...','Rekrutiere Bogenschützen...','Feinde nähern sich...'],'Tipp: Upgrade zuerst die Kanonen.','Verteidige dein Schloss gegen endlose Monsterwellen.','castle'],
+ ['Pixel Ninja','🥷','#262626','#000000','Action',['Schärfe Klingen...','Lade Dojo...','Meditiere...'],'Tipp: Doppelsprung an Wänden!','Schleiche, springe und kämpfe dich durch 50 Pixel-Level.','night'],
+ ['Candy Pop Saga','🍬','#ff4dc4','#6b0049','Puzzle',['Fülle Bonbonglas...','Lade Zuckerwelt...','Verteile Leben...'],'Tipp: Vier gleiche ergeben eine Bombe.','Verbinde drei gleiche Süßigkeiten und knacke über 500 Level.','blobs'],
+ ['Goal Rush 26','⚽','#1a9e3a','#063b14','Sport',['Pumpe Ball auf...','Lade Stadion...','Fans strömen herein...'],'Tipp: Schuss mit Effekt in die lange Ecke.','Schnelles Arcade-Fußball mit verrückten Power-Ups.','field'],
+ ['Brain Burst','🧠','#ffb31a','#6b4100','Quiz',['Lade Fragen...','Wärme Gehirnzellen auf...','Mische Kategorien...'],'Tipp: Der Joker funktioniert nur einmal.','Teste dein Wissen in 20 Kategorien gegen Spieler weltweit.','blobs'],
+ ['Sky Pirates','🏴‍☠️','#1a6bff','#03164a','Abenteuer',['Hisse Segel...','Lade Wolkeninseln...','Lade Kanonen...'],'Tipp: Goldene Wolken enthalten Schätze.','Erobere fliegende Inseln mit deinem Luftschiff.','sky'],
+ ['Snake Arena','🐍','#00b894','#00362c','Multiplayer',['Suche Gegner...','Verteile Futter...','Betrete Arena...'],'Tipp: Kreise größere Schlangen ein.','Werde die längste Schlange in der Online-Arena.','field'],
+ ['Cube Jumper','🟦','#3dc1ff','#003a5c','Arcade',['Stapel Würfel...','Lade Rhythmus...','Kalibriere Sprünge...'],'Tipp: Springe im Takt der Musik.','Hüpfe im Takt durch geometrische Hindernisse.','space'],
+ ['Dragon Forge','🐉','#ff3b3b','#4a0000','RPG',['Schüre Feuer...','Brüte Dracheneier aus...','Lade Königreich...'],'Tipp: Feuerdrachen sind schwach gegen Wasser.','Züchte Drachen und erobere ein mittelalterliches Königreich.','castle'],
+ ['Bank Heist','💰','#d4af37','#3b2f00','Action',['Hacke Alarmanlage...','Lade Tresor...','Crew bereit...'],'Tipp: Die Kameras haben tote Winkel.','Plane den perfekten Coup mit deiner Crew.','city'],
+ ['Mini Golf Pro','⛳','#5ad15a','#0b3b0b','Sport',['Mähe Rasen...','Lade 18 Löcher...','Poliere Schläger...'],'Tipp: Nutze die Banden für Hole-in-One.','Entspanntes Minigolf auf 18 verrückten Bahnen.','field'],
+ ['Space Miner','⛏️','#6b4a2b','#1a0f05','Simulation',['Bohre Schacht...','Lade Planet...','Prüfe Sauerstoff...'],'Tipp: Kristalle bringen am meisten Geld.','Baue Rohstoffe auf fremden Planeten ab.','space'],
+ ['Cat Café','🐱','#ffb3c6','#6b2b3d','Simulation',['Koche Kaffee...','Füttere Katzen...','Öffne Café...'],'Tipp: Glückliche Katzen bringen mehr Gäste.','Führe dein eigenes gemütliches Katzencafé.','blobs'],
+ ['Laser Maze','🔺','#ff1aa6','#2b0020','Puzzle',['Richte Spiegel aus...','Lade Laser...','Kalibriere Licht...'],'Tipp: Prismen teilen den Strahl.','Lenke Laserstrahlen durch knifflige Spiegel-Labyrinthe.','glitch'],
+ ['Ice Climber','🧊','#a6e8ff','#1a4a6b','Abenteuer',['Friere Wände ein...','Lade Gletscher...','Packe Seile...'],'Tipp: Blaues Eis ist rutschig.','Klettere den höchsten Eisberg der Welt hinauf.','sky']
+];
 
-// Mini-cmd in Karte 1
-const lines=['C:\\Windows\\system32>whoami','desktop\\you','','C:\\Windows\\system32>sc stop WinDefend','STATUS : STOP_PENDING','','C:\\Windows\\system32>vssadmin delete shadows /all','Erfolgreich geloescht.','','C:\\Windows\\system32>svch0st.exe --encrypt'];
-let li=0;const ct=document.getElementById('cmdtxt');
-setInterval(()=>{li=(li+1)%(lines.length+6);ct.textContent=lines.slice(0,Math.min(li,lines.length)).join('\n');},400);
+/* ===== Bilder pro Spiel als SVG generieren ===== */
+function rnd(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
+function art(i, withTitle) {
+  const [name, emo, c1, c2, , , , , sc] = G[i];
+  const r = rnd(i * 77 + 13);
+  let deco = '';
+  if (sc === 'space' || sc === 'night') for (let k = 0; k < 40; k++) deco += `<circle cx="${r()*400}" cy="${r()*300}" r="${r()*1.8+.3}" fill="#fff" opacity="${r()*.8+.2}"/>`;
+  if (sc === 'space') deco += `<circle cx="330" cy="60" r="38" fill="${c1}" opacity=".7"/><ellipse cx="330" cy="60" rx="60" ry="10" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="3"/>`;
+  if (sc === 'night') deco += `<circle cx="320" cy="60" r="30" fill="#fff6c2" opacity=".85"/><rect x="0" y="210" width="400" height="90" fill="#000" opacity=".6"/>`;
+  if (sc === 'city') for (let k = 0; k < 9; k++) { const h = 60 + r() * 140, x = k * 46; deco += `<rect x="${x}" y="${300-h}" width="40" height="${h}" fill="#000" opacity=".55"/>`; for (let w = 0; w < 6; w++) deco += `<rect x="${x+6+(w%2)*16}" y="${300-h+10+(w>>1)*20}" width="8" height="8" fill="#ffd23f" opacity="${r()>.4?.8:.1}"/>`; }
+  if (sc === 'road') deco += `<polygon points="160,300 240,300 215,120 185,120" fill="#222"/><polygon points="198,300 202,300 201,120 199,120" fill="#ffd23f"/><rect x="0" y="110" width="400" height="12" fill="#ff1aa6" opacity=".5"/>`;
+  if (sc === 'field') deco += `<rect x="0" y="170" width="400" height="130" fill="#000" opacity=".2"/><circle cx="200" cy="235" r="40" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><line x1="200" y1="170" x2="200" y2="300" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>`;
+  if (sc === 'castle') deco += `<path d="M90 300 V190 h20 v-15 h15 v15 h20 v-15 h15 v15 h20 V140 h20 v-15 h15 v15 h20 V190 h20 v-15 h15 v15 h20 V300z" fill="#000" opacity=".5"/>`;
+  if (sc === 'sky') for (let k = 0; k < 6; k++) { const x = r()*400, y = r()*260; deco += `<ellipse cx="${x}" cy="${y}" rx="${30+r()*30}" ry="${12+r()*8}" fill="#fff" opacity=".35"/>`; }
+  if (sc === 'blobs') for (let k = 0; k < 14; k++) deco += `<circle cx="${r()*400}" cy="${r()*300}" r="${8+r()*26}" fill="#fff" opacity="${.08+r()*.18}"/>`;
+  if (sc === 'glitch') for (let k = 0; k < 10; k++) deco += `<rect x="${r()*300}" y="${r()*300}" width="${40+r()*140}" height="${2+r()*5}" fill="${k%2?'#00f0ff':'#ff1aa6'}" opacity=".7"/>`;
+  const title = withTitle ? `<text x="200" y="${withTitle==='big'?280:282}" text-anchor="middle" font-family="Inter,Arial" font-weight="900" font-size="${withTitle==='big'?30:26}" fill="#fff" stroke="#000" stroke-width="5" paint-order="stroke">${name.toUpperCase()}</text>` : '';
+  return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="g${i}${withTitle}" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></radialGradient></defs>
+    <rect width="400" height="300" fill="url(#g${i}${withTitle})"/>${deco}
+    <text x="200" y="${withTitle?175:190}" text-anchor="middle" font-size="${withTitle?120:150}" style="filter:drop-shadow(0 8px 10px rgba(0,0,0,.6))">${emo}</text>${title}</svg>`;
+}
 
-// Countdown
-let sec=72*3600-1;setInterval(()=>{sec--;const h=sec/3600|0,m=(sec%3600)/60|0,s=sec%60;
- document.getElementById('cd').textContent=[h,m,s].map(v=>String(v).padStart(2,'0')).join(':');},1000);
+/* ===== Verschiedene Werbespots (alles erfundene Apps) ===== */
+const ADS = [
+  // 1: Pull the Pin
+  { app:'Kingdom Rescue: Pull Pin', ic:'🏰', icbg:'linear-gradient(135deg,#ffb300,#ff6f00)', bg:'linear-gradient(#5ec8ff,#2b7fd6)',
+    html:`<svg viewBox="0 0 300 260"><rect x="40" y="20" width="220" height="230" rx="6" fill="#6b4a2b" stroke="#3d2914" stroke-width="6"/><rect x="52" y="30" width="196" height="210" fill="#bfe3ff"/><rect x="146" y="30" width="8" height="120" fill="#6b4a2b"/>
+      <g id="a_lava" class="tr"><rect x="56" y="40" width="88" height="70" fill="#ff5a1f"/><circle cx="80" cy="60" r="6" fill="#ffd23f"/></g>
+      <g id="a_gold" class="tr"><circle cx="175" cy="95" r="10" fill="#ffd23f" stroke="#c99400" stroke-width="2"/><circle cx="198" cy="100" r="10" fill="#ffd23f" stroke="#c99400" stroke-width="2"/><circle cx="222" cy="95" r="10" fill="#ffd23f" stroke="#c99400" stroke-width="2"/><circle cx="198" cy="80" r="10" fill="#ffd23f" stroke="#c99400" stroke-width="2"/></g>
+      <g id="a_p1" class="tr"><rect x="40" y="112" width="112" height="9" rx="4" fill="#ddd"/><circle cx="36" cy="116" r="11" fill="#e33"/></g>
+      <g id="a_p2" class="tr"><rect x="148" y="112" width="112" height="9" rx="4" fill="#ddd"/><circle cx="264" cy="116" r="11" fill="#e33"/></g>
+      <circle cx="150" cy="200" r="16" fill="#ffd8b0"/><rect x="134" y="214" width="32" height="24" rx="6" fill="#2e7dff"/><circle cx="144" cy="197" r="2.5"/><circle cx="156" cy="197" r="2.5"/></svg>`,
+    steps:[[0,'NUR 1% SCHAFFEN DAS! 🤯'],[1500,'',()=>T('a_p1','translateX(-160px)')],[2200,'FAIL 😱 KANNST DU ES BESSER?',()=>T('a_lava','translateY(120px)')],
+           [4200,'VERSUCH 2... 🤔',()=>{T('a_lava','none');T('a_p1','none');}],[5200,'',()=>T('a_p2','translateX(160px)')],[6000,'GESCHAFFT! 💰💰💰',()=>T('a_gold','translate(-50px,95px)')],[7800,'LEVEL 2 WARTET... JETZT GRATIS!']] },
+  // 2: Merge-Spiel
+  { app:'Merge Kingdom: Dragons', ic:'🐲', icbg:'linear-gradient(135deg,#8e2de2,#4a00e0)', bg:'linear-gradient(#2b1055,#7597de)',
+    html:`<div style="display:grid;grid-template-columns:repeat(3,70px);gap:8px">${['🥚','🥚','🐣','🥚','🐣','🥚','🐣','🥚','🥚'].map((e,k)=>`<div id="m${k}" class="tr" style="width:70px;height:70px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:40px">${e}</div>`).join('')}</div>`,
+    steps:[[0,'MERGE 3 = ??? 🤔'],[1500,'🥚 + 🥚 + 🥚',()=>{['m0','m1','m3'].forEach(x=>T(x,'scale(.2)'));}],[2600,'🐣 BABY DRACHE!',()=>{$('m0').textContent='🐣';T('m0','scale(1.2)');}],
+           [4200,'🐣 + 🐣 + 🐣',()=>{['m2','m4','m6'].forEach(x=>T(x,'scale(.2)'));}],[5400,'🐉 LEGENDÄRER DRACHE!!!',()=>{$('m4').textContent='🐉';T('m4','scale(1.6)');}],[7500,'SPIEL GRATIS – 10 MIO. SPIELER']] },
+  // 3: "Hilf ihm"-Rettungsspiel
+  { app:'Save The Hero: Brain Out', ic:'🦸', icbg:'linear-gradient(135deg,#00c853,#007e33)', bg:'linear-gradient(#ffecd2,#fcb69f)',
+    html:`<div style="position:relative;width:280px;height:190px">
+      <div style="position:absolute;left:10px;bottom:0;font-size:70px" class="big">🧍</div>
+      <div id="r_w" class="tr" style="position:absolute;left:120px;bottom:10px;font-size:60px">🌊</div>
+      <div id="r_opts" style="position:absolute;right:0;top:0;display:flex;flex-direction:column;gap:6px">
+        <div id="r_a" class="tr" style="background:#fff;border-radius:10px;padding:6px 12px;font-size:30px">🪵</div>
+        <div id="r_b" class="tr" style="background:#fff;border-radius:10px;padding:6px 12px;font-size:30px">🧱</div>
+        <div id="r_c" class="tr" style="background:#fff;border-radius:10px;padding:6px 12px;font-size:30px">🚤</div></div></div>`,
+    steps:[[0,'WAS WÜRDEST DU WÄHLEN? 🤔'],[1600,'🧱 ??? FALSCH! 😭',()=>{$('r_b').style.background='#ff5252';}],[3400,'🪵 ...AUCH FALSCH! 😩',()=>{$('r_a').style.background='#ff5252';}],
+           [5200,'🚤 RICHTIG! GERETTET! 🎉',()=>{$('r_c').style.background='#4caf50';T('r_w','translateX(40px) scale(.6)');}],[7400,'99% SCHEITERN – DU AUCH?']] },
+  // 4: Idle-Farm
+  { app:'Idle Farm Tycoon', ic:'🐔', icbg:'linear-gradient(135deg,#f9d423,#ff4e50)', bg:'linear-gradient(#a8e063,#56ab2f)',
+    html:`<div style="text-align:center"><div id="f_c" style="font-family:Orbitron;font-size:clamp(26px,5vw,48px);color:#ffd23f;text-shadow:0 3px 0 #000">💰 0</div>
+      <div id="f_f" style="font-size:clamp(40px,7vw,70px);margin-top:10px;letter-spacing:6px">🐔</div></div>`,
+    steps:[[0,'ICH HABE MIT 1 HUHN ANGEFANGEN...',()=>count(0,500)],[2000,'NACH 1 TAG 😮',()=>{$('f_f').textContent='🐔🐔🐄';count(500,25000);}],
+           [4200,'NACH 1 WOCHE 🤑',()=>{$('f_f').textContent='🐔🐄🐖🚜🏭';count(25000,9800000);}],[6800,'MILLIONÄR OHNE ZU SPIELEN?! 💸']] }
+];
+function T(id, tr) { const e = $(id); if (e) e.style.transform = tr; }
+let cntIv;
+function count(a, b) { clearInterval(cntIv); let v = a; const st = (b - a) / 20; cntIv = setInterval(() => { v = Math.min(b, v + st); const e = $('f_c'); if (e) e.textContent = '💰 ' + Math.round(v).toLocaleString('de-DE'); if (v >= b) clearInterval(cntIv); }, 80); }
 
-// Karten einblenden
-const io=new IntersectionObserver(es=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('in'),i*120);io.unobserve(e.target);}}),{threshold:.2});
-document.querySelectorAll('.st').forEach(s=>{s.style.transition='opacity .6s, transform .6s';io.observe(s);});
+/* ===== Spiel öffnen / Ablauf ===== */
+let cur = 0, timers = [];
+function clearAll() { timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = []; clearInterval(cntIv); }
+function openGame(i, scroll) {
+  clearAll(); cur = i;
+  const g = G[i];
+  $('cover').style.display = 'flex'; $('ad').style.display = 'none'; $('gate').style.display = 'none';
+  $('coverArt').innerHTML = art(i);
+  $('infoIco').innerHTML = art(i);
+  $('title').textContent = g[0];
+  const pl = (1 + (i * 37 % 90) / 10).toFixed(1);
+  $('sub').textContent = `PixelArcade Originals · ★ ${(4.2 + (i % 7) / 10).toFixed(1)} · ${pl} Mio. Spieler`;
+  $('likes').textContent = '👍 ' + (88 + i % 11) + '%';
+  $('tags').innerHTML = [g[4], 'Kostenlos', 'Browser', 'Singleplayer'].map(t => `<span>${t}</span>`).join('');
+  $('desc').textContent = g[7];
+  $('crumb').innerHTML = `Startseite › ${g[4]} › <b style="color:#fff">${g[0]}</b>`;
+  document.title = g[0] + ' – Kostenlos spielen | PixelArcade';
+  const sim = [1, 2, 3].map(k => (i + k * 5) % G.length);
+  $('similar').innerHTML = sim.map(k => `<div class="g" onclick="openGame(${k},1)"><div class="th">${art(k)}</div><div><b>${G[k][0]}</b><span>${G[k][4]} · ★${(4.2 + (k % 7) / 10).toFixed(1)}</span></div></div>`).join('');
+  if (scroll) scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-// Shake beim Download-Klick
-document.getElementById('dl').addEventListener('click',()=>{document.body.classList.add('shake');setTimeout(()=>document.body.classList.remove('shake'),600);});
+$('playBtn').onclick = () => {
+  const ad = ADS[(cur + Math.floor(Math.random() * ADS.length)) % ADS.length];
+  $('cover').style.display = 'none'; $('ad').style.display = 'block';
+  $('creative').style.background = ad.bg;
+  $('creative').innerHTML = `<div class="hook" id="hook"></div><div class="scene">${ad.html}</div>
+    <div class="cta-row"><div class="appic" style="background:${ad.icbg}">${ad.ic}</div><div class="appinfo"><b>${ad.app}</b><span>★★★★★ 4.${6 + Math.floor(Math.random()*3)} · KOSTENLOS</span></div><div class="install">INSTALLIEREN</div></div>`;
+  ad.steps.forEach(([ms, txt, fn]) => timers.push(setTimeout(() => { if (txt) $('hook').textContent = txt; if (fn) fn(); }, ms)));
+  const bar = $('adbar'); bar.style.transition = 'none'; bar.style.width = '0';
+  requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transition = 'width 10s linear'; bar.style.width = '100%'; }));
+  const skip = $('skip'); skip.classList.remove('ready'); skip.onclick = null; skip.textContent = 'Überspringen in 5';
+  let t = 5, total = 10; $('adtime').textContent = 'Anzeige · 0:10';
+  const iv = setInterval(() => {
+    t--; total--;
+    $('adtime').textContent = 'Anzeige · 0:' + String(Math.max(0, total)).padStart(2, '0');
+    if (t > 0) skip.textContent = 'Überspringen in ' + t;
+    else if (t === 0) { skip.textContent = 'Werbung überspringen ▶▏'; skip.classList.add('ready'); skip.onclick = () => { clearAll(); gate(); }; }
+    if (total <= 0) { clearAll(); gate(); }
+  }, 1000);
+  timers.push(iv);
+};
+
+function gate() {
+  const g = G[cur];
+  $('ad').style.display = 'none'; $('gate').style.display = 'flex';
+  $('gateBg').innerHTML = art(cur); $('gateIco').innerHTML = art(cur);
+  $('gateTitle').textContent = g[0].toUpperCase() + ' WIRD GELADEN...';
+  $('gateTip').textContent = g[6]; $('dlBox').style.display = 'none';
+  const msgs = g[5]; let p = 0;
+  const iv = setInterval(() => {
+    p += Math.random() * 8;
+    if (p >= 78) {
+      clearInterval(iv); $('load').style.width = '78%';
+      $('gateTitle').textContent = 'BROWSER NICHT UNTERSTÜTZT';
+      $('gateTxt').textContent = g[0] + ' läuft nur als Desktop-Version. Lade das Spiel kostenlos herunter und starte es direkt.';
+      $('gateTip').textContent = ''; $('dlBox').style.display = 'block';
+      return;
+    }
+    $('load').style.width = p + '%';
+    $('gateTxt').textContent = msgs[Math.min(msgs.length - 1, p / 26 | 0)];
+  }, 230);
+  timers.push(iv);
+}
+
+/* ===== Raster ===== */
+function fill(id, idx, badge) {
+  $(id).innerHTML = idx.map((i, n) => {
+    const b = badge === 'new' ? '<span class="bd new">NEU</span>' : (n < 3 ? '<span class="bd hot">HOT</span>' : '');
+    const pl = (((i * 53) % 90) + 5 + (i % 10) / 10).toFixed(1) + 'K';
+    return `<div class="tile" onclick="openGame(${i},1)">${art(i, 'small')}${b}<span class="pl">👤 ${pl}</span><span class="nm">▶ ${G[i][0]}</span></div>`;
+  }).join('');
+}
+fill('g1', [0,1,2,3,4,5,6,7,8,9,10]); fill('g2', [11,12,13,14,15,16,17,18,19,20], 'new');
+openGame(0);
 </script>
 </body>
 </html>
